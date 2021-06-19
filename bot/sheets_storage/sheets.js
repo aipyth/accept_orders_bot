@@ -74,21 +74,6 @@ const SheetsStorage = {
             Name: name,
             Comments: comments,
         })
-        // const rows = await this._sheet.getRows()
-
-        // const firstEmptyRowIndex = this._findEmptyRowIndex(rows)
-
-        // const emptyRow = rows[firstEmptyRowIndex]
-
-        // const num = emptyRow._rawData[0]
-        // const text = request.body
-        // const flat = user.flat_number
-
-        // let date = request.created_at
-        // const creation_date = `${date.getDay()}.${date.getMonth()}.${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
-
-        // emptyRow._rawData = [num, text, creation_date, flat]
-        // emptyRow.save()
     }
 }
 

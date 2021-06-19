@@ -34,11 +34,11 @@ const Stating = function({state, step, func}) {
     return async function(ctx, next) {
         const curr_state = ctx.getState()
         if (curr_state != undefined && curr_state.state == state && curr_state.step == step) {
-            console.log(`STATING: entering handler with state `, curr_state)
+            // console.log(`STATING: entering handler with state `, curr_state)
             await func(ctx, next)
             // whether should we call next function?
         } else {
-            console.log(`STATING: evaded handler with state `, curr_state)
+            // console.log(`STATING: evaded handler with state `, curr_state)
             await next()
         }
     }
@@ -55,16 +55,42 @@ const Bot = {
 
     start: async () => {
 
+        const buildReplyText = ({wr, vendor, color, size, ttn, address, comments, number, name}) => {
+            return `Ваша заявка:
+${'*' + wr + '*'}
+Артикул: ${'*' + vendor + '*'}
+Цвет: ${'*' + color + '*'}
+Размер: ${'*' + size + '*'}
+${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
+Номер: ${'*' + number + '*'}
+Имя: ${'*' + name + '*'}
+Комментарий: ${comments ?  '*' + comments + '*' : "_Не указан_"}`
+        }
+
+        // const Order = () => {
+        function Order() {
+            this.wr = undefined
+            this.vendor = undefined
+            this.color = undefined
+            this.size = undefined
+            this.ttn = undefined
+            this.address = undefined
+            this.check_url = undefined
+            this.comments = undefined
+            this.number = undefined
+            this.name = undefined
+        }
+
         await SheetsStorage.connectToDocument()
         console.log(`Connected to ${SheetsStorage.getDocTitle()}`)
         let userOrders = {}
 
+        // HANDLERS
+
         bot.start(async ctx => {
             ctx.reply('hi', kbs.addOrder)
 
-            console.log(kbs.addOrder)
-            
-            db.createBotUser({
+            await db.createBotUser({
                 id: ctx.from.id,
                 username: ctx.from.username ? ctx.from.username : "",
                 name: ctx.from.first_name,
@@ -77,47 +103,39 @@ const Bot = {
             ctx.reply(`Выберите вариант заказа`, kbs.tradeChoice)
             ctx.answerCbQuery()
             ctx.setState(states.order, 0)
-            userOrders[ctx.from.id] = {
-                wr: undefined,
-                vendor: undefined,
-                color: undefined,
-                size: undefined,
-                ttn: undefined,
-                address: undefined,
-                check: undefined,
-                comments: undefined,
-                number: undefined,
-                name: undefined,
-            }
+            // userOrders[ctx.from.id] = {
+            //     wr: undefined,
+            //     vendor: undefined,
+            //     color: undefined,
+            //     size: undefined,
+            //     ttn: undefined,
+            //     address: undefined,
+            //     check: undefined,
+            //     comments: undefined,
+            //     number: undefined,
+            //     name: undefined,
+            // }
+            userOrders[ctx.from.id] = new Order()
         })
 
         bot.command('order', async ctx => {
             ctx.reply(`Выберите вариант заказа`, kbs.tradeChoice)
-            // ctx.answerCbQuery()
             ctx.setState(states.order, 0)
-            userOrders[ctx.from.id] = {
-                wr: undefined,
-                vendor: undefined,
-                color: undefined,
-                size: undefined,
-                ttn: undefined,
-                address: undefined,
-                check_url: undefined,
-                comments: undefined,
-                number: undefined,
-                name: undefined,
-            }
+            userOrders[ctx.from.id] = new Order()
         })
 
         bot.action([kbs.callbacks.retail, kbs.callbacks.wholesale], Stating({
             state: states.order,
             step: 0,
             func: async ctx => {
-                ctx.editMessageReplyMarkup(null)
-                ctx.answerCbQuery(`Вы выбрали ${ctx.update.callback_query.data}`)
-                userOrders[ctx.from.id].wr = ctx.update.callback_query.data
+                const data = ctx.update.callback_query.data;
+                userOrders[ctx.from.id].wr = data
 
+                ctx.editMessageReplyMarkup(null)
+                ctx.answerCbQuery(`Вы выбрали ${data}`)
+                ctx.editMessageText(ctx.update.callback_query.message.text + `\n*Вы выбрали ${data}*`, {parse_mode: 'Markdown'})
                 ctx.reply(`Напишите артикул`)
+
                 ctx.stepState()
             }
         }))
@@ -126,9 +144,6 @@ const Bot = {
             state: states.order,
             step: 1,
             func: async ctx => {
-                // console.log(ctx)
-                // console.log(ctx.message)
-                // console.log(ctx.update.message)
                 userOrders[ctx.from.id].vendor = ctx.message.text
                 ctx.reply(`Напишите цвет`)
                 ctx.stepState()
@@ -160,10 +175,7 @@ const Bot = {
             step: 4,
             func: async ctx => {
                 ctx.editMessageReplyMarkup(null)
-                // console.log(ctx)
-                console.log(ctx.from.id)
-                // userOrders[ctx.from.id].ttn = ctx.callback_query.message.text
-                // ctx.reply(`Предоставьте фотографию чека`)
+
                 if (ctx.update.callback_query.data == kbs.callbacks.ttn) {
                     userOrders[ctx.from.id].ttn = true
                     ctx.reply(`Напишите ТТН`)
@@ -194,14 +206,10 @@ const Bot = {
             state: states.order,
             step: 6,
             func: async ctx => {
-                // console.log(ctx)
-                // console.log(ctx.update.message.photo)
                 const files = ctx.update.message.photo
                 const photo_info = files[files.length - 1]
                 const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
-                const file_url = file_info.href
-                
-                userOrders[ctx.from.id].check_url = file_url
+                userOrders[ctx.from.id].check_url = file_info.href
 
                 ctx.reply('Укажите ваше имя и фамилию')
                 ctx.stepState()
@@ -229,23 +237,13 @@ const Bot = {
             step: 8,
             func: async ctx => {
                 const phone = ctx.message.text
-                console.log(phone)
                 if (phone.match(/^\+?([0-9 ]{10}|[0-9 ]{12})$/)){
                     userOrders[ctx.from.id].number = ctx.update.message.text
 
                     const order = userOrders[ctx.from.id]
+                    const reply_text = buildReplyText(order)
 
-                    const reply_text = `Ваша заявка:
-    ${'*' + order.wr + '*'}
-    Артикул: ${'*' + order.vendor + '*'}
-    Цвет: ${'*' + order.color + '*'}
-    Размер: ${'*' + order.size + '*'}
-    ${order.ttn ? ('ТТН: *' + order.ttn + '*') : ('Адрес: *' + order.address + '*')}
-    Номер: ${'*' + order.number + '*'}
-    Имя: ${'*' + order.name + '*'}
-    Комментарий: ${order.comments ? order.comments : "_Не указан_"}`
-
-                    ctx.replyWithMarkdown(reply_text, kbs.submitOrComment)
+                    await ctx.replyWithMarkdown(reply_text, kbs.submitOrComment)
                     ctx.stepState()
                 } else {
                     ctx.reply(`Ошибка ввода мобильного телефона, попробуйте еще раз`)
@@ -257,23 +255,12 @@ const Bot = {
             state: states.order,
             step: 8,
             func: async ctx => {
-                console.log(ctx.update.message.contact.phone_number)
-
                 userOrders[ctx.from.id].number = ctx.update.message.contact.phone_number
 
                 const order = userOrders[ctx.from.id]
+                const reply_text = buildReplyText(order)
 
-                const reply_text = `Ваша заявка:
-${'*' + order.wr + '*'}
-Артикул: ${'*' + order.vendor + '*'}
-Цвет: ${'*' + order.color + '*'}
-Размер: ${'*' + order.size + '*'}
-${order.ttn ? ('ТТН: *' + order.ttn + '*') : ('Адрес: *' + order.address + '*')}
-Номер: ${'*' + order.number + '*'}
-Имя: ${'*' + order.name + '*'}
-Комментарий: ${order.comments ? '*' + order.comments + '*' : "_Не указан_"}`
-
-                ctx.replyWithMarkdown(reply_text, kbs.submitOrComment)
+                await ctx.replyWithMarkdown(reply_text, kbs.submitOrComment)
                 ctx.stepState()
             }
         }))
@@ -297,18 +284,9 @@ ${order.ttn ? ('ТТН: *' + order.ttn + '*') : ('Адрес: *' + order.address
                 userOrders[ctx.from.id].comments = ctx.update.message.text
 
                 const order = userOrders[ctx.from.id]
+                const reply_text = buildReplyText(order)
 
-                const reply_text = `Ваша заявка:
-${'*' + order.wr + '*'}
-Артикул: ${'*' + order.vendor + '*'}
-Цвет: ${'*' + order.color + '*'}
-Размер: ${'*' + order.size + '*'}
-${order.ttn ? ('ТТН: *' + order.ttn + '*') : ('Адрес: *' + order.address + '*')}
-Номер: ${'*' + order.number + '*'}
-Имя: ${'*' + order.name + '*'}
-Комментарий: ${order.comments ? '*' + order.comments + '*' : "_Не указан_"}`
-
-                ctx.replyWithMarkdown(reply_text, kbs.submitOrComment)
+                await ctx.replyWithMarkdown(reply_text, kbs.submitOrComment)
                 ctx.stepState(-1)
             }
         }))
@@ -341,9 +319,6 @@ ${order.ttn ? ('ТТН: *' + order.ttn + '*') : ('Адрес: *' + order.address
         }))
 
     },
-
-    
-
 }
 
 module.exports = Bot
