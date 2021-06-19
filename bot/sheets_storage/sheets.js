@@ -15,6 +15,7 @@ function _connectDocument(id) {
         this._doc = doc
 
         this._sheet = doc.sheetsByIndex[this._sheet_index]
+        await this._sheet.setHeaderRow(this._headers)
     }
 }
 
@@ -23,8 +24,19 @@ const SheetsStorage = {
     // if data in this column equals undefined
     // we suppose this row as empty
     // so we can add here our new information
-    _emptyness_flag_col_index: 2,
     _sheet_index: 0,
+    _headers: [
+        'Дата',
+        'Тип заказа',
+        'Количество',
+        'Товары',
+        'ТТН',
+        'Адрес',
+        'Чек',
+        'Номер телефона',
+        'Имя',
+        'Комментарий'
+    ],
 
     // name: "Campus",
 
@@ -32,47 +44,37 @@ const SheetsStorage = {
     _doc: undefined,
     _sheet: undefined,
 
-
     // METHODS
-    _findEmptyRowIndex: function(rows) {
-        for (i = 0; i < rows.length; i++) {
-            if (rows[i]._rawData[this._emptyness_flag_col_index] == undefined) {
-                return i
-            }
-        }
-    },
     connectToDocument: _connectDocument(DocumentID),
 
     getDocTitle: function() {
         return this._doc.title
     },
 
-    add: async function({wr, vendor, color, size, ttn, address, check_url, number, name, comments}) {
-        await this._sheet.setHeaderRow([
-            'Date',
-            'WR',
-            'Vendor',
-            'Color',
-            'Size',
-            'TTN',
-            'Address',
-            'Check',
-            'Phone',
-            'Name',
-            'Comments'
-        ])
+    add: async function({wr, ware, ttn, address, check_url, number, name, comments}) {
+        let n = 0
+        let wareStr = ""
+        for (i = 0; i < ware.length; i++) {
+            n += parseInt(ware[i].count)
+            console.log(n, parseInt(ware[i].count), ware[i].count)
+            wareStr += `${ware[i].vendor} - ${ware[i].color} - ${ware[i].size} - ${ware[i].count};`
+            wareStr += i != ware.length-1 ? '\n' : ''
+        }
+        const now = (new Date()).toLocaleString(['de-AT', 'en-GB', 'en-AU'], {
+            timeZone: 'Europe/Kiev'
+        })
+
         return await this._sheet.addRow({
-            Date: (new Date()).toString(),
-            WR: wr,
-            Vendor: vendor,
-            Color: color,
-            Size: size,
-            TTN: ttn,
-            Address: address,
-            Check: check_url,
-            Phone: number,
-            Name: name,
-            Comments: comments,
+            'Дата': now,
+            'Тип заказа': wr,
+            'Количество': n,
+            'Товары': wareStr,
+            'ТТН': ttn,
+            'Адрес': address,
+            'Чек': check_url,
+            'Номер телефона': number,
+            'Имя': name,
+            'Комментарий': comments,
         })
     }
 }

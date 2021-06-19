@@ -20,6 +20,7 @@ const callbacks = {
     retail:     'Розница',
     ttn:        'ttn',
     address:    'address',
+    addWare:    'addWare',
     comment:    'comment',
     submit:     'submit',
     decline:    'decline',
@@ -41,6 +42,7 @@ module.exports = {
     ttnOrAddress: buildInlineKeyboard([
         ['TTН', callbacks.ttn],
         ['Адрес', callbacks.address],
+        ['Добавить товар', callbacks.addWare],
     ]),
 
     submitOrComment: buildInlineKeyboard([

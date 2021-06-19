@@ -1,9 +1,8 @@
 require('dotenv').config()
-const { Telegraf } = require('telegraf')
+const { Telegraf, Markup } = require('telegraf')
+// const { Markup } = require('telegraf/markup')
 const db = require('../db/db')
 const SheetsStorage = require('../sheets_storage/sheets')
-const Sheets = require('../sheets_storage/sheets')
-const { submitOrComment } = require('./keyboards')
 const kbs = require('./keyboards')
 
 
@@ -55,27 +54,37 @@ const Bot = {
 
     start: async () => {
 
-        const buildReplyText = ({wr, vendor, color, size, ttn, address, comments, number, name}) => {
-            return `Ваша заявка:
-${'*' + wr + '*'}
-Артикул: ${'*' + vendor + '*'}
-Цвет: ${'*' + color + '*'}
-Размер: ${'*' + size + '*'}
-${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
-Номер: ${'*' + number + '*'}
-Имя: ${'*' + name + '*'}
-Комментарий: ${comments ?  '*' + comments + '*' : "_Не указан_"}`
+        const buildReplyText = ({wr, ware, ttn, address, comments, number, name}) => {
+            let text = 'Ваша заявка:\n\n' + '*' + wr + '*\n'
+            text += `Количество товаров -- ${ware.length}\n`
+            for (let i = 0; i < ware.length; i++) {
+                text += `_Товар ${i+1}_ -- `
+                text += '*' + ware[i].vendor + '*, '
+                text += '*' + ware[i].color + '*, '
+                text += '*' + ware[i].size + '*, '
+                text += '*' + ware[i].count + '*\n'
+            }
+            text += ttn ? ('ТТН: *' + ttn + '*\n') : ('Адрес: *' + address + '*\n')
+            text += '_Номер телефона:_ ' + '*' + number + '*\n'
+            text += '_Имя:_ ' + '*' + name + '*\n'
+            text += '_Комментарий:_ ' + (comments ?  '*' + comments + '*' : "_Не указан_")
+            return text
         }
 
         // const Order = () => {
         function Order() {
             this.wr = undefined
+
             this.vendor = undefined
             this.color = undefined
             this.size = undefined
+            this.ware = []
+
             this.ttn = undefined
             this.address = undefined
+
             this.check_url = undefined
+
             this.comments = undefined
             this.number = undefined
             this.name = undefined
@@ -156,7 +165,22 @@ ${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
             func: async ctx => {
                 userOrders[ctx.from.id].color = ctx.message.text
                 ctx.reply(`Напишите размер`)
-                ctx.stepState()
+                ctx.stepState(0.5)
+            }
+        }))
+
+        bot.on('text', Stating({
+            state: states.order,
+            step: 2.5,
+            func: async ctx => {
+                userOrders[ctx.from.id].size = ctx.message.text
+                const buttons = Markup.keyboard([
+                    ["1", "2", "3", "4"],
+                    ["5", "6", "7", "8"],
+                    ["9", "10", "11", "12"],
+                ]).oneTime().resize()
+                ctx.reply(`Напишите количество`, buttons)
+                ctx.stepState(0.5)
             }
         }))
 
@@ -164,9 +188,27 @@ ${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
             state: states.order,
             step: 3,
             func: async ctx => {
-                userOrders[ctx.from.id].size = ctx.message.text
+                // userOrders[ctx.from.id].size = ctx.message.text
+                userOrders[ctx.from.id].count = ctx.message.text
+                // add one to list of ware
+                userOrders[ctx.from.id].ware.push({
+                    vendor: userOrders[ctx.from.id].vendor,
+                    color: userOrders[ctx.from.id].color,
+                    size: userOrders[ctx.from.id].size,
+                    count: userOrders[ctx.from.id].count,
+                })
+
                 ctx.reply(`Будете указывать ТТН или адрес?`, kbs.ttnOrAddress)
                 ctx.stepState()
+            }
+        }))
+
+        bot.action(kbs.callbacks.addWare, Stating({
+            state: states.order,
+            step: 4,
+            func: async ctx => {
+                ctx.reply(`Напишите артикул`)
+                ctx.stepState(-3)
             }
         }))
 
@@ -175,6 +217,7 @@ ${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
             step: 4,
             func: async ctx => {
                 ctx.editMessageReplyMarkup(null)
+                ctx.answerCbQuery()
 
                 if (ctx.update.callback_query.data == kbs.callbacks.ttn) {
                     userOrders[ctx.from.id].ttn = true
@@ -224,7 +267,7 @@ ${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
                 ctx.reply(`Напишите или отправьте свой номер телефона`, {
                     reply_markup: { 
                         keyboard: [
-                            [{text: '📲 Отправить номер телефона', request_contact: true}]
+                            [{text: '📲 Отправить номер телефона', request_contact: true, remove_keyboard: true, one_time_keyboard: true}]
                         ]
                     }
                 })
@@ -270,6 +313,7 @@ ${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
             step: 9,
             func: async ctx => {
                 ctx.editMessageReplyMarkup(null)
+                ctx.answerCbQuery()
 
                 ctx.reply(`Укажите ваш комментарий`)
                 ctx.stepState()
@@ -298,10 +342,16 @@ ${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
                 ctx.editMessageReplyMarkup(null)
                 ctx.answerCbQuery(`Отправляю ваш заказ`)
                 // add to google sheets
-                await SheetsStorage.add(userOrders[ctx.from.id])
-                delete userOrders[ctx.from.id]
+                try {
+                    await SheetsStorage.add(userOrders[ctx.from.id])
 
-                ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Ваш заказ отправлен*", { parse_mode: "Markdown" })
+                    ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Ваш заказ отправлен*", { parse_mode: "Markdown" })
+                } catch (e) {
+                    console.error(e)
+                    ctx.reply(`Во время оправки заказа произошла ошибка`)
+                } finally {
+                    delete userOrders[ctx.from.id]
+                }
             }
         }))
 
@@ -318,6 +368,11 @@ ${ttn ? ('ТТН: *' + ttn + '*') : ('Адрес: *' + address + '*')}
             }
         }))
 
+        bot.command('cancel', async ctx => {
+            ctx.clearState()
+            delete userOrders[ctx.from.id]
+            ctx.reply(`Вы отменили заявку`)
+        })
     },
 }
 
