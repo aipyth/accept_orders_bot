@@ -97,7 +97,7 @@ const Bot = {
         // HANDLERS
 
         bot.start(async ctx => {
-            ctx.reply('hi', kbs.addOrder)
+            ctx.reply('Hi!', kbs.addOrder)
 
             await db.createBotUser({
                 id: ctx.from.id,
