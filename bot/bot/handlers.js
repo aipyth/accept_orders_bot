@@ -220,7 +220,7 @@ const Bot = {
                     ctx.reply(`Напишите ТТН`)
                 } else if (ctx.update.callback_query.data == kbs.callbacks.address) {
                     userOrders[ctx.from.id].address = true
-                    ctx.reply(text.writeAddress)
+                    ctx.replyWithMarkdown(text.writeAddress)
                 }
                 ctx.stepState()
             }
