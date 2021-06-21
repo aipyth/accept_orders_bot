@@ -4,6 +4,7 @@ const { Telegraf, Markup } = require('telegraf')
 const db = require('../db/db')
 const SheetsStorage = require('../sheets_storage/sheets')
 const kbs = require('./keyboards')
+const text = require('./text.json')
 
 
 
@@ -55,7 +56,7 @@ const Bot = {
     start: async () => {
 
         const buildReplyText = ({wr, ware, ttn, address, comments, number, name}) => {
-            let text = 'Ваша заявка:\n\n' + '*' + wr + '*\n'
+            let text = 'Проверьте, пожалуйста, ваш заказ:\n\n' + '*' + wr + '*\n'
             text += `Количество товаров -- ${ware.length}\n`
             for (let i = 0; i < ware.length; i++) {
                 text += `_Товар ${i+1}_ -- `
@@ -68,10 +69,14 @@ const Bot = {
             text += '_Номер телефона:_ ' + '*' + number + '*\n'
             text += '_Имя:_ ' + '*' + name + '*\n'
             text += '_Комментарий:_ ' + (comments ?  '*' + comments + '*' : "_Не указан_")
+
+            text += "\n\nТакже Вы можете указать комментарий, если что-то упустили при создании заказа"
+            text += "\nЧтобы оставить комментарий, нажмите кнопку ниже 👇"
+            
+            text += "\nЕсли Вы подтверждаете заказ, нажмите \"Подтвердить и отправить\""
             return text
         }
 
-        // const Order = () => {
         function Order() {
             this.wr = undefined
 
@@ -97,7 +102,7 @@ const Bot = {
         // HANDLERS
 
         bot.start(async ctx => {
-            ctx.reply('hi!', kbs.addOrder)
+            ctx.reply(text.start, kbs.addOrder)
 
             await db.createBotUser({
                 id: ctx.from.id,
@@ -109,26 +114,14 @@ const Bot = {
         })
 
         bot.action(kbs.callbacks.addOrder, async ctx => {
-            ctx.reply(`Выберите вариант заказа`, kbs.tradeChoice)
             ctx.answerCbQuery()
+            ctx.reply(text.tradeChoice, kbs.tradeChoice)
             ctx.setState(states.order, 0)
-            // userOrders[ctx.from.id] = {
-            //     wr: undefined,
-            //     vendor: undefined,
-            //     color: undefined,
-            //     size: undefined,
-            //     ttn: undefined,
-            //     address: undefined,
-            //     check: undefined,
-            //     comments: undefined,
-            //     number: undefined,
-            //     name: undefined,
-            // }
             userOrders[ctx.from.id] = new Order()
         })
 
         bot.command('order', async ctx => {
-            ctx.reply(`Выберите вариант заказа`, kbs.tradeChoice)
+            ctx.reply(text.tradeChoice, kbs.tradeChoice)
             ctx.setState(states.order, 0)
             userOrders[ctx.from.id] = new Order()
         })
@@ -142,8 +135,11 @@ const Bot = {
 
                 ctx.editMessageReplyMarkup(null)
                 ctx.answerCbQuery(`Вы выбрали ${data}`)
-                ctx.editMessageText(ctx.update.callback_query.message.text + `\n*Вы выбрали ${data}*`, {parse_mode: 'Markdown'})
-                ctx.reply(`Напишите артикул`)
+                // ctx.editMessageText(ctx.update.callback_query.message.text + `\n*Спасибо, Вы выбрали ${data} 🙌
+                ctx.editMessageText(`\n*Спасибо, Вы выбрали ${data} 🙌*
+
+Теперь Вы можете перейти к выбору товара` + text.writeVendor, {parse_mode: 'Markdown'})
+                // ctx.reply(`Напишите артикул`)
 
                 ctx.stepState()
             }
@@ -154,7 +150,7 @@ const Bot = {
             step: 1,
             func: async ctx => {
                 userOrders[ctx.from.id].vendor = ctx.message.text
-                ctx.reply(`Напишите цвет`)
+                ctx.reply(text.choseColor)
                 ctx.stepState()
             }
         }))
@@ -164,7 +160,7 @@ const Bot = {
             step: 2,
             func: async ctx => {
                 userOrders[ctx.from.id].color = ctx.message.text
-                ctx.reply(`Напишите размер`)
+                ctx.reply(text.choseSize)
                 ctx.stepState(0.5)
             }
         }))
@@ -179,7 +175,7 @@ const Bot = {
                     ["5", "6", "7", "8"],
                     ["9", "10", "11", "12"],
                 ]).oneTime().resize()
-                ctx.reply(`Напишите количество`, buttons)
+                ctx.reply(text.choseNumber, buttons)
                 ctx.stepState(0.5)
             }
         }))
@@ -207,7 +203,7 @@ const Bot = {
             state: states.order,
             step: 4,
             func: async ctx => {
-                ctx.reply(`Напишите артикул`)
+                ctx.reply(text.writeVendor)
                 ctx.stepState(-3)
             }
         }))
@@ -224,7 +220,7 @@ const Bot = {
                     ctx.reply(`Напишите ТТН`)
                 } else if (ctx.update.callback_query.data == kbs.callbacks.address) {
                     userOrders[ctx.from.id].address = true
-                    ctx.reply(`Напишите адрес`)
+                    ctx.reply(text.writeAddress)
                 }
                 ctx.stepState()
             }
@@ -239,7 +235,7 @@ const Bot = {
                 } else if (userOrders[ctx.from.id].address === true) {
                     userOrders[ctx.from.id].address = ctx.message.text
                 }
-                ctx.reply(`Предоставьте фотографию чека`)
+                ctx.reply(text.provideCheckPhoto)
                 ctx.stepState()
             }
         }))
@@ -254,7 +250,7 @@ const Bot = {
                 const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
                 userOrders[ctx.from.id].check_url = file_info.href
 
-                ctx.reply('Укажите ваше имя и фамилию')
+                ctx.reply(text.writeName)
                 ctx.stepState()
             }
         }))
@@ -264,7 +260,7 @@ const Bot = {
             step: 7,
             func: async ctx => {
                 userOrders[ctx.from.id].name = ctx.update.message.text
-                ctx.reply(`Напишите или отправьте свой номер телефона`, {
+                ctx.reply(text.writePhoneNumber, {
                     reply_markup: { 
                         keyboard: [
                             [{text: '📲 Отправить номер телефона', request_contact: true, remove_keyboard: true, one_time_keyboard: true}]
@@ -345,7 +341,7 @@ const Bot = {
                 try {
                     await SheetsStorage.add(userOrders[ctx.from.id])
 
-                    ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Ваш заказ отправлен*", { parse_mode: "Markdown" })
+                    ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Спасибо, что оформили заказ!*", { parse_mode: "Markdown" })
                 } catch (e) {
                     console.error(e)
                     ctx.reply(`Во время оправки заказа произошла ошибка`)
