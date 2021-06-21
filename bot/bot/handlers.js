@@ -138,7 +138,7 @@ const Bot = {
                 // ctx.editMessageText(ctx.update.callback_query.message.text + `\n*Спасибо, Вы выбрали ${data} 🙌
                 ctx.editMessageText(`\n*Спасибо, Вы выбрали ${data} 🙌*
 
-Теперь Вы можете перейти к выбору товара` + text.writeVendor, {parse_mode: 'Markdown'})
+Теперь Вы можете перейти к выбору товара\n\n` + text.writeVendor, {parse_mode: 'Markdown'})
                 // ctx.reply(`Напишите артикул`)
 
                 ctx.stepState()
