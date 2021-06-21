@@ -341,7 +341,8 @@ const Bot = {
                 try {
                     await SheetsStorage.add(userOrders[ctx.from.id])
 
-                    ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Спасибо, что оформили заказ!*", { parse_mode: "Markdown" })
+                    // ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Спасибо, что оформили заказ!*", { parse_mode: "Markdown" })
+                    ctx.reply(text.thanksAndContacts)
                 } catch (e) {
                     console.error(e)
                     ctx.reply(`Во время оправки заказа произошла ошибка`)
