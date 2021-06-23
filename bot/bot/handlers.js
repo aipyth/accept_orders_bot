@@ -217,7 +217,7 @@ const Bot = {
                     count: userOrders[ctx.from.id].count,
                 })
 
-                ctx.reply(`Будете указывать ТТН или адрес?`, kbs.ttnOrAddress)
+                ctx.reply(text.choseTTNorAddress, kbs.ttnOrAddress)
                 ctx.stepState()
             }
         }))
