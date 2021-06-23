@@ -61,9 +61,13 @@ const Bot = {
             for (let i = 0; i < ware.length; i++) {
                 text += `_Товар ${i+1}_ -- `
                 text += '*' + ware[i].vendor + '*, '
-                text += '*' + ware[i].color + '*, '
+                if (!ware[i].color.startsWith('http')) {
+                    text += '*' + ware[i].color + '*, '
+                } else {
+                    text += ' _вы указали цвет фотографией_ , '
+                }
                 text += '*' + ware[i].size + '*, '
-                text += '*' + ware[i].count + '*\n'
+                text += '*' + ware[i].count + ' шт.*\n'
             }
             text += ttn ? ('ТТН: *' + ttn + '*\n') : ('Адрес: *' + address + '*\n')
             text += '_Номер телефона:_ ' + '*' + number + '*\n'
@@ -113,6 +117,12 @@ const Bot = {
 
         })
 
+        bot.command('cancel', async ctx => {
+            ctx.clearState()
+            delete userOrders[ctx.from.id]
+            ctx.reply(`Вы отменили заявку`)
+        })
+
         bot.action(kbs.callbacks.addOrder, async ctx => {
             ctx.answerCbQuery()
             ctx.reply(text.tradeChoice, kbs.tradeChoice)
@@ -160,6 +170,19 @@ const Bot = {
             step: 2,
             func: async ctx => {
                 userOrders[ctx.from.id].color = ctx.message.text
+                ctx.reply(text.choseSize)
+                ctx.stepState(0.5)
+            }
+        }))
+
+        bot.on('photo', Stating({
+            state: states.order,
+            step: 2,
+            func: async ctx => {
+                const files = ctx.update.message.photo
+                const photo_info = files[files.length - 1]
+                const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
+                userOrders[ctx.from.id].color = file_info.href
                 ctx.reply(text.choseSize)
                 ctx.stepState(0.5)
             }
@@ -365,11 +388,7 @@ const Bot = {
             }
         }))
 
-        bot.command('cancel', async ctx => {
-            ctx.clearState()
-            delete userOrders[ctx.from.id]
-            ctx.reply(`Вы отменили заявку`)
-        })
+        
     },
 }
 
