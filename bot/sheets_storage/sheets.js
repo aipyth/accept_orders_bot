@@ -35,9 +35,9 @@ const SheetsStorage = {
 
         'Тип заказа',
         'Количество',
-        'Цвет',
+        // 'Цвет',
 
-        'Размер',
+        // 'Размер',
 
         'Имя',
         'Номер телефона',
@@ -70,21 +70,28 @@ const SheetsStorage = {
             // wareStr += `${ware[i].vendor} - ${ware[i].color} - ${ware[i].size} - ${ware[i].count};`
             // wareStr += i != ware.length-1 ? '\n' : ''
 
-            vendors += i != 0 ? '; ' : ''
-            vendors += ware[i].vendor
-            vendors += i != ware.length-1 ? '\n' : ''
+            // vendors += i != 0 ? '; ' : ''
+            // if (ware[i].wareText != undefined) {
+            //     vendors +=
+            // } else {
+            // }
+            vendors += ware[i].wareText
+            if (ware[i].color != undefined) {
+                vendors += ' ' + ware[i].color
+            }
+            vendors += i != ware.length-1 ? '\n\n' : ''
 
-            colors += i != 0 ? '; ' : ''
-            colors += ware[i].color
-            colors += i != ware.length-1 ? '\n' : ''
+            // colors += i != 0 ? '; ' : ''
+            // colors += ware[i].color
+            // colors += i != ware.length-1 ? '\n' : ''
 
-            n += i != 0 ? '; ' : ''
+            // n += i != 0 ? '; ' : ''
             n += ware[i].count
             n += i != ware.length-1 ? '\n' : ''
 
-            sizes += i != 0 ? '; ' : ''
-            sizes += ware[i].size
-            sizes += i != ware.length-1 ? '\n' : ''
+            // sizes += i != 0 ? '; ' : ''
+            // sizes += ware[i].size
+            // sizes += i != ware.length-1 ? '\n' : ''
         }
         const now = (new Date()).toLocaleString(['de-AT', 'en-GB', 'en-AU'], {
             timeZone: 'Europe/Kiev'
@@ -100,9 +107,9 @@ const SheetsStorage = {
 
             'Тип заказа': wr,
             'Количество': n,
-            'Цвет': colors,
+            // 'Цвет': colors,
             
-            'Размер': sizes,
+            // 'Размер': sizes,
 
             'Имя': name,
             'Номер телефона': number,

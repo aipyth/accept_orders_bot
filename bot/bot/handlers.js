@@ -60,13 +60,20 @@ const Bot = {
             text += `Количество товаров -- ${ware.length}\n`
             for (let i = 0; i < ware.length; i++) {
                 text += `_Товар ${i+1}_ -- `
-                text += '*' + ware[i].vendor + '*, '
-                if (!ware[i].color.startsWith('http')) {
-                    text += '*' + ware[i].color + '*, '
+                if (ware[i].wareText != undefined) {
+                    text += '*' + ware[i].wareText + '* '
+                    if (ware[i].color != undefined) {
+                        text += '+ _вы указали цвет фотографией_ , '
+                    }
                 } else {
-                    text += ' _вы указали цвет фотографией_ , '
+                    text += '*' + ware[i].vendor + '*, '
+                    if (!ware[i].color.startsWith('http')) {
+                        text += '*' + ware[i].color + '*, '
+                    } else {
+                        text += ' _вы указали цвет фотографией_ , '
+                    }
+                    text += '*' + ware[i].size + '*, '
                 }
-                text += '*' + ware[i].size + '*, '
                 text += '*' + ware[i].count + ' шт.*\n'
             }
             text += ttn ? ('ТТН: *' + ttn + '*\n') : ('Адрес: *' + address + '*\n')
@@ -84,8 +91,11 @@ const Bot = {
         function Order() {
             this.wr = undefined
 
+            this.userWare = undefined
+
             this.vendor = undefined
             this.color = undefined
+
             this.size = undefined
             this.ware = []
 
@@ -159,49 +169,82 @@ const Bot = {
             state: states.order,
             step: 1,
             func: async ctx => {
-                userOrders[ctx.from.id].vendor = ctx.message.text
-                ctx.reply(text.choseColor)
-                ctx.stepState()
-            }
-        }))
-
-        bot.on('text', Stating({
-            state: states.order,
-            step: 2,
-            func: async ctx => {
-                userOrders[ctx.from.id].color = ctx.message.text
-                ctx.reply(text.choseSize)
-                ctx.stepState(0.5)
-            }
-        }))
-
-        bot.on('photo', Stating({
-            state: states.order,
-            step: 2,
-            func: async ctx => {
-                const files = ctx.update.message.photo
-                const photo_info = files[files.length - 1]
-                const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
-                userOrders[ctx.from.id].color = file_info.href
-                ctx.reply(text.choseSize)
-                ctx.stepState(0.5)
-            }
-        }))
-
-        bot.on('text', Stating({
-            state: states.order,
-            step: 2.5,
-            func: async ctx => {
-                userOrders[ctx.from.id].size = ctx.message.text
+                userOrders[ctx.from.id].userWare = ctx.message.text
+                // userOrders[ctx.from.id].vendor = ctx.message.text
+                // ctx.reply(text.choseColor)
                 const buttons = Markup.keyboard([
                     ["1", "2", "3", "4"],
                     ["5", "6", "7", "8"],
                     ["9", "10", "11", "12"],
                 ]).oneTime().resize()
                 ctx.reply(text.choseNumber, buttons)
-                ctx.stepState(0.5)
+                ctx.stepState(2)
             }
         }))
+
+        bot.on('photo', Stating({
+            state: states.order,
+            step: 1,
+            func: async ctx => {
+                const files = ctx.update.message.photo
+                const photo_info = files[files.length - 1]
+                const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
+                userOrders[ctx.from.id].color = file_info.href
+                // console.log('Photo caption', ctx.update.message.caption)
+                if (ctx.update.message.caption != undefined) {
+                    userOrders[ctx.from.id].userWare = ctx.message.caption
+                    const buttons = Markup.keyboard([
+                        ["1", "2", "3", "4"],
+                        ["5", "6", "7", "8"],
+                        ["9", "10", "11", "12"],
+                    ]).oneTime().resize()
+                    ctx.reply(text.choseNumber, buttons)
+                    ctx.stepState(2)
+                } else {
+                    ctx.reply('Укажите, пожалуйста:\n - Артикул;\n- цвет;\n- размер.')
+                }
+                // ctx.reply(text.choseSize)
+                // ctx.stepState(0.5)
+            }
+        }))
+
+        // bot.on('text', Stating({
+        //     state: states.order,
+        //     step: 2,
+        //     func: async ctx => {
+        //         userOrders[ctx.from.id].color = ctx.message.text
+        //         ctx.reply(text.choseSize)
+        //         ctx.stepState(0.5)
+        //     }
+        // }))
+
+        // bot.on('photo', Stating({
+        //     state: states.order,
+        //     step: 2,
+        //     func: async ctx => {
+        //         const files = ctx.update.message.photo
+        //         const photo_info = files[files.length - 1]
+        //         const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
+        //         userOrders[ctx.from.id].color = file_info.href
+        //         ctx.reply(text.choseSize)
+        //         ctx.stepState(0.5)
+        //     }
+        // }))
+
+        // bot.on('text', Stating({
+        //     state: states.order,
+        //     step: 2.5,
+        //     func: async ctx => {
+        //         userOrders[ctx.from.id].size = ctx.message.text
+        //         const buttons = Markup.keyboard([
+        //             ["1", "2", "3", "4"],
+        //             ["5", "6", "7", "8"],
+        //             ["9", "10", "11", "12"],
+        //         ]).oneTime().resize()
+        //         ctx.reply(text.choseNumber, buttons)
+        //         ctx.stepState(0.5)
+        //     }
+        // }))
 
         bot.on('text', Stating({
             state: states.order,
@@ -211,11 +254,20 @@ const Bot = {
                 userOrders[ctx.from.id].count = ctx.message.text
                 // add one to list of ware
                 userOrders[ctx.from.id].ware.push({
+                    wareText: userOrders[ctx.from.id].userWare,
                     vendor: userOrders[ctx.from.id].vendor,
                     color: userOrders[ctx.from.id].color,
                     size: userOrders[ctx.from.id].size,
                     count: userOrders[ctx.from.id].count,
                 })
+
+                console.log(userOrders[ctx.from.id].ware)
+
+                userOrders[ctx.from.id].userWare = undefined
+                userOrders[ctx.from.id].vendor = undefined
+                userOrders[ctx.from.id].color = undefined
+                userOrders[ctx.from.id].size = undefined
+                userOrders[ctx.from.id].count = undefined
 
                 ctx.reply(text.choseTTNorAddress, kbs.ttnOrAddress)
                 ctx.stepState()
