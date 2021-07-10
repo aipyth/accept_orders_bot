@@ -3,6 +3,7 @@ const { Telegraf, Markup } = require('telegraf')
 // const { Markup } = require('telegraf/markup')
 const db = require('../db/db')
 const SheetsStorage = require('../sheets_storage/sheets')
+const { callbacks } = require('./keyboards')
 const kbs = require('./keyboards')
 const text = require('./text.json')
 
@@ -153,12 +154,20 @@ const Bot = {
                 const data = ctx.update.callback_query.data;
                 userOrders[ctx.from.id].wr = data
 
-                ctx.editMessageReplyMarkup(null)
+                try {
+                    ctx.editMessageReplyMarkup(null)
+                } catch (e) {
+                    console.error(e)
+                }
                 ctx.answerCbQuery(`Вы выбрали ${data}`)
                 // ctx.editMessageText(ctx.update.callback_query.message.text + `\n*Спасибо, Вы выбрали ${data} 🙌
-                ctx.editMessageText(`\n*Спасибо, Вы выбрали ${data} 🙌*
-
-Теперь Вы можете перейти к выбору товара\n\n` + text.writeVendor, {parse_mode: 'Markdown'})
+                try {
+                    ctx.editMessageText(`\n*Спасибо, Вы выбрали ${data} 🙌*
+    
+    Теперь Вы можете перейти к выбору товара\n\n` + text.writeVendor, {parse_mode: 'Markdown'})
+                } catch (e) {
+                    console.error(e)
+                }
                 // ctx.reply(`Напишите артикул`)
 
                 ctx.stepState()
@@ -287,7 +296,11 @@ const Bot = {
             state: states.order,
             step: 4,
             func: async ctx => {
-                ctx.editMessageReplyMarkup(null)
+                try {
+                    ctx.editMessageReplyMarkup(null)
+                } catch (e) {
+                    console.error(e)
+                }
                 ctx.answerCbQuery()
 
                 if (ctx.update.callback_query.data == kbs.callbacks.ttn) {
@@ -383,7 +396,11 @@ const Bot = {
             state: states.order,
             step: 9,
             func: async ctx => {
-                ctx.editMessageReplyMarkup(null)
+                try {
+                    ctx.editMessageReplyMarkup(null)
+                } catch (e) {
+                    console.error(e)
+                }
                 ctx.answerCbQuery()
 
                 ctx.reply(`Укажите ваш комментарий`)
@@ -410,7 +427,11 @@ const Bot = {
             state: states.order,
             step: 9,
             func: async ctx => {
-                ctx.editMessageReplyMarkup(null)
+                try {
+                    ctx.editMessageReplyMarkup(null)
+                } catch (e) {
+                    console.error(e)
+                }
                 ctx.answerCbQuery(`Отправляю ваш заказ`)
                 // add to google sheets
                 try {
@@ -431,12 +452,20 @@ const Bot = {
             state: states.order,
             step: 9,
             func: async ctx => {
-                ctx.editMessageReplyMarkup(null)
+                try {
+                    ctx.editMessageReplyMarkup(null)
+                } catch (e) {
+                    console.error(e)
+                }
                 ctx.answerCbQuery(`Ваша заявка отклонена вами`)
 
                 delete userOrders[ctx.from.id]
 
-                ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Вы отменили заказ*", { parse_mode: 'Markdown' })
+                try {
+                    ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Вы отменили заказ*", { parse_mode: 'Markdown' })
+                } catch (e) {
+                    console.log(e)
+                }
             }
         }))
 
