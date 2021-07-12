@@ -1,4 +1,4 @@
-require('dotenv').config()
+// require('dotenv').config()
 const { Telegraf, Markup } = require('telegraf')
 // const { Markup } = require('telegraf/markup')
 const db = require('../db/db')
@@ -6,6 +6,8 @@ const SheetsStorage = require('../sheets_storage/sheets')
 const { callbacks } = require('./keyboards')
 const kbs = require('./keyboards')
 const text = require('./text.json')
+const axios = require('axios')
+const fs = require('fs')
 
 
 
@@ -197,21 +199,59 @@ const Bot = {
             func: async ctx => {
                 const files = ctx.update.message.photo
                 const photo_info = files[files.length - 1]
-                const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
-                userOrders[ctx.from.id].color = file_info.href
+                const url = await ctx.telegram.getFileLink(photo_info.file_id)
+                
+
+
+                const time_now = (new Date()).getTime().toString()
+                const filename = `${ctx.update.update_id}_${time_now}.jpg`
+                const filepath = `${process.env.IMAGES_PATH}/${filename}`
+
+                axios({url: url.href, responseType: 'stream'})
+                .then(response => {
+                    return new Promise((resolve, reject) => {
+                        response.data.pipe(fs.createWriteStream(filepath))
+                            .on('finish', () => {
+                                
+                                userOrders[ctx.from.id].color = `${process.env.SERVER_URL}/${filename}`
+
+                                if (ctx.update.message.caption != undefined) {
+                                    userOrders[ctx.from.id].userWare = ctx.message.caption
+                                    const buttons = Markup.keyboard([
+                                        ["1", "2", "3", "4"],
+                                        ["5", "6", "7", "8"],
+                                        ["9", "10", "11", "12"],
+                                    ]).oneTime().resize()
+                                    ctx.reply(text.choseNumber, buttons)
+                                    ctx.stepState(2)
+                                } else {
+                                    ctx.reply('Укажите, пожалуйста:\n - Артикул;\n- цвет;\n- размер.')
+                                }
+                            })
+                            .on('error', e => {
+                                console.error('cannot get photo', e)
+                                ctx.reply('Ошибка сервера. В данный момент невозможно получить фотографию.')
+                                ctx.clearState()
+                                delete userOrders[ctx.from.id]
+                            })
+                        });
+                    })
+
+
+
                 // console.log('Photo caption', ctx.update.message.caption)
-                if (ctx.update.message.caption != undefined) {
-                    userOrders[ctx.from.id].userWare = ctx.message.caption
-                    const buttons = Markup.keyboard([
-                        ["1", "2", "3", "4"],
-                        ["5", "6", "7", "8"],
-                        ["9", "10", "11", "12"],
-                    ]).oneTime().resize()
-                    ctx.reply(text.choseNumber, buttons)
-                    ctx.stepState(2)
-                } else {
-                    ctx.reply('Укажите, пожалуйста:\n - Артикул;\n- цвет;\n- размер.')
-                }
+                // if (ctx.update.message.caption != undefined) {
+                //     userOrders[ctx.from.id].userWare = ctx.message.caption
+                //     const buttons = Markup.keyboard([
+                //         ["1", "2", "3", "4"],
+                //         ["5", "6", "7", "8"],
+                //         ["9", "10", "11", "12"],
+                //     ]).oneTime().resize()
+                //     ctx.reply(text.choseNumber, buttons)
+                //     ctx.stepState(2)
+                // } else {
+                //     ctx.reply('Укажите, пожалуйста:\n - Артикул;\n- цвет;\n- размер.')
+                // }
                 // ctx.reply(text.choseSize)
                 // ctx.stepState(0.5)
             }
@@ -335,11 +375,34 @@ const Bot = {
             func: async ctx => {
                 const files = ctx.update.message.photo
                 const photo_info = files[files.length - 1]
-                const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
-                userOrders[ctx.from.id].check_url = file_info.href
 
-                ctx.reply(text.writeName)
-                ctx.stepState()
+                const url = await ctx.telegram.getFileLink(photo_info.file_id)
+
+                const time_now = (new Date()).getTime().toString()
+                const filename = `${ctx.update.update_id}_${time_now}.jpg`
+                const filepath = `${process.env.IMAGES_PATH}/${filename}`
+
+                axios({url: url.href, responseType: 'stream'})
+                .then(response => {
+                    return new Promise((resolve, reject) => {
+                        response.data.pipe(fs.createWriteStream(filepath))
+                            .on('finish', () => {
+                                
+                                userOrders[ctx.from.id].check_url = `${process.env.SERVER_URL}/${filename}`
+
+                                ctx.reply(text.writeName)
+                                ctx.stepState()
+                            })
+                            .on('error', e => {
+                                console.error('cannot get photo', e)
+                                ctx.reply('Ошибка сервера. В данный момент невозможно получить фотографию.')
+                                ctx.clearState()
+                                delete userOrders[ctx.from.id]
+                            })
+                        });
+                    })
+                
+                
             }
         }))
 

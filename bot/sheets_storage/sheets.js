@@ -1,7 +1,7 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet')
 const creds = require('./credentials.json')
 
-require('dotenv').config()
+// require('dotenv').config()
 
 const DocumentID = process.env.DOCUMENT_ID
 
