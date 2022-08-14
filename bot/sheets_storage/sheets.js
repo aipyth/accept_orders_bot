@@ -28,16 +28,13 @@ const SheetsStorage = {
     _headers: [
         'Дата',
 
-        'Артикул',
-        'ТТН',
+        'Артикул Цвет Размер Количество',
+        'ТТН - Артикул Цвет Размер Количество',
         'Адрес',
         'Квитанция',
 
         'Тип заказа',
         'Количество',
-        // 'Цвет',
-
-        // 'Размер',
 
         'Имя',
         'Номер телефона',
@@ -58,41 +55,23 @@ const SheetsStorage = {
     },
 
     add: async function({wr, ware, ttn, address, check_url, number, name, comments}) {
-        // let n = ""
-        // let wareStr = ""
-        let vendors = "",
-            colors = "",
-            n = "",
-            sizes = ""
+        let n = ""
+
+        console.dir({
+          wr, ware, ttn, address, check_url, number, name, comments
+        })
+
+        let wares = ''
+
         for (i = 0; i < ware.length; i++) {
-            // n += parseInt(ware[i].count)
-            // console.log(n, parseInt(ware[i].count), ware[i].count)
-            // wareStr += `${ware[i].vendor} - ${ware[i].color} - ${ware[i].size} - ${ware[i].count};`
-            // wareStr += i != ware.length-1 ? '\n' : ''
+            wares += ware[i].wareText
+            wares += '\n' + ware[i].count + 'шт.'
+            wares += i !== ware.length-1 ? '\n\n' : ''
 
-            // vendors += i != 0 ? '; ' : ''
-            // if (ware[i].wareText != undefined) {
-            //     vendors +=
-            // } else {
-            // }
-            vendors += ware[i].wareText
-            if (ware[i].color != undefined) {
-                vendors += ' ' + ware[i].color
-            }
-            vendors += i != ware.length-1 ? '\n\n' : ''
-
-            // colors += i != 0 ? '; ' : ''
-            // colors += ware[i].color
-            // colors += i != ware.length-1 ? '\n' : ''
-
-            // n += i != 0 ? '; ' : ''
             n += ware[i].count
-            n += i != ware.length-1 ? '\n' : ''
-
-            // sizes += i != 0 ? '; ' : ''
-            // sizes += ware[i].size
-            // sizes += i != ware.length-1 ? '\n' : ''
+            n += i !== ware.length-1 ? '\n' : ''
         }
+
         const now = (new Date()).toLocaleString(['de-AT', 'en-GB', 'en-AU'], {
             timeZone: 'Europe/Kiev'
         }).replace(',', '')
@@ -100,16 +79,13 @@ const SheetsStorage = {
         return await this._sheet.addRow({
             'Дата': now,
 
-            'Артикул': vendors,
-            'ТТН': ttn,
+            'Артикул Цвет Размер Количество': wares,
+            'ТТН - Артикул Цвет Размер Количество': ttn ? ttn + '\n' + wares : null,
             'Адрес': address,
             'Квитанция': check_url,
 
-            'Тип заказа': wr,
+            // 'Тип заказа': wr,
             'Количество': n,
-            // 'Цвет': colors,
-            
-            // 'Размер': sizes,
 
             'Имя': name,
             'Номер телефона': number,

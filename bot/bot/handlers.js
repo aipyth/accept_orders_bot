@@ -59,10 +59,11 @@ const Bot = {
     start: async () => {
 
         const buildReplyText = ({wr, ware, ttn, address, comments, number, name}) => {
-            let text = 'Проверьте, пожалуйста, ваш заказ:\n\n' + '*' + wr + '*\n'
-            text += `Количество товаров -- ${ware.length}\n`
+            // let text = 'Проверьте, пожалуйста, ваш заказ:\n\n' + '*' + wr + '*\n'
+            let text = 'Проверьте, пожалуйста, ваш заказ:\n\n'
+            text += `Количество товаров — ${ware.length}\n`
             for (let i = 0; i < ware.length; i++) {
-                text += `_Товар ${i+1}_ -- `
+                text += `_Товар ${i+1}_ — `
                 if (ware[i].wareText != undefined) {
                     text += '*' + ware[i].wareText + '* '
                     if (ware[i].color != undefined) {
@@ -96,10 +97,10 @@ const Bot = {
 
             this.userWare = undefined
 
-            this.vendor = undefined
-            this.color = undefined
-
-            this.size = undefined
+            // this.vendor = undefined
+            // this.color = undefined
+            //
+            // this.size = undefined
             this.ware = []
 
             this.ttn = undefined
@@ -138,43 +139,18 @@ const Bot = {
 
         bot.action(kbs.callbacks.addOrder, async ctx => {
             ctx.answerCbQuery()
-            ctx.reply(text.tradeChoice, kbs.tradeChoice)
-            ctx.setState(states.order, 0)
+            // ctx.reply(text.tradeChoice, kbs.tradeChoice)
+            ctx.reply(`Перейдем к выбору товара\n\n` + text.writeVendor, {parse_mode: 'Markdown'})
+            ctx.setState(states.order, 1)
             userOrders[ctx.from.id] = new Order()
         })
 
         bot.command('order', async ctx => {
-            ctx.reply(text.tradeChoice, kbs.tradeChoice)
-            ctx.setState(states.order, 0)
+            // ctx.reply(text.tradeChoice, kbs.tradeChoice)
+            ctx.reply(`Перейдем к выбору товара\n\n` + text.writeVendor, {parse_mode: 'Markdown'})
+            ctx.setState(states.order, 1)
             userOrders[ctx.from.id] = new Order()
         })
-
-        bot.action([kbs.callbacks.retail, kbs.callbacks.wholesale], Stating({
-            state: states.order,
-            step: 0,
-            func: async ctx => {
-                const data = ctx.update.callback_query.data;
-                userOrders[ctx.from.id].wr = data
-
-                try {
-                    ctx.editMessageReplyMarkup(null)
-                } catch (e) {
-                    console.error(e)
-                }
-                ctx.answerCbQuery(`Вы выбрали ${data}`)
-                // ctx.editMessageText(ctx.update.callback_query.message.text + `\n*Спасибо, Вы выбрали ${data} 🙌
-                try {
-                    ctx.editMessageText(`\n*Спасибо, Вы выбрали ${data} 🙌*
-    
-    Теперь Вы можете перейти к выбору товара\n\n` + text.writeVendor, {parse_mode: 'Markdown'})
-                } catch (e) {
-                    console.error(e)
-                }
-                // ctx.reply(`Напишите артикул`)
-
-                ctx.stepState()
-            }
-        }))
 
         bot.on('text', Stating({
             state: states.order,
@@ -193,108 +169,6 @@ const Bot = {
             }
         }))
 
-        // bot.on('photo', Stating({
-        //     state: states.order,
-        //     step: 1,
-        //     func: async ctx => {
-        //         const files = ctx.update.message.photo
-        //         const photo_info = files[files.length - 1]
-        //         const url = await ctx.telegram.getFileLink(photo_info.file_id)
-                
-
-
-        //         const time_now = (new Date()).getTime().toString()
-        //         const filename = `${ctx.update.update_id}_${time_now}.jpg`
-        //         const filepath = `${process.env.IMAGES_PATH}/${filename}`
-
-        //         axios({url: url.href, responseType: 'stream'})
-        //         .then(response => {
-        //             return new Promise((resolve, reject) => {
-        //                 response.data.pipe(fs.createWriteStream(filepath))
-        //                     .on('finish', () => {
-                                
-        //                         userOrders[ctx.from.id].color = `${process.env.SERVER_URL}/${filename}`
-
-        //                         if (ctx.update.message.caption != undefined) {
-        //                             userOrders[ctx.from.id].userWare = ctx.message.caption
-        //                             const buttons = Markup.keyboard([
-        //                                 ["1", "2", "3", "4"],
-        //                                 ["5", "6", "7", "8"],
-        //                                 ["9", "10", "11", "12"],
-        //                             ]).oneTime().resize()
-        //                             ctx.reply(text.choseNumber, buttons)
-        //                             ctx.stepState(2)
-        //                         } else {
-        //                             ctx.reply('Укажите, пожалуйста:\n - Артикул;\n- цвет;\n- размер.')
-        //                         }
-        //                     })
-        //                     .on('error', e => {
-        //                         console.error('cannot get photo', e)
-        //                         ctx.reply('Ошибка сервера. В данный момент невозможно получить фотографию.')
-        //                         ctx.clearState()
-        //                         delete userOrders[ctx.from.id]
-        //                     })
-        //                 });
-        //             })
-
-
-
-                // console.log('Photo caption', ctx.update.message.caption)
-                // if (ctx.update.message.caption != undefined) {
-                //     userOrders[ctx.from.id].userWare = ctx.message.caption
-                //     const buttons = Markup.keyboard([
-                //         ["1", "2", "3", "4"],
-                //         ["5", "6", "7", "8"],
-                //         ["9", "10", "11", "12"],
-                //     ]).oneTime().resize()
-                //     ctx.reply(text.choseNumber, buttons)
-                //     ctx.stepState(2)
-                // } else {
-                //     ctx.reply('Укажите, пожалуйста:\n - Артикул;\n- цвет;\n- размер.')
-                // }
-                // ctx.reply(text.choseSize)
-                // ctx.stepState(0.5)
-            // }
-        // }))
-
-        // bot.on('text', Stating({
-        //     state: states.order,
-        //     step: 2,
-        //     func: async ctx => {
-        //         userOrders[ctx.from.id].color = ctx.message.text
-        //         ctx.reply(text.choseSize)
-        //         ctx.stepState(0.5)
-        //     }
-        // }))
-
-        // bot.on('photo', Stating({
-        //     state: states.order,
-        //     step: 2,
-        //     func: async ctx => {
-        //         const files = ctx.update.message.photo
-        //         const photo_info = files[files.length - 1]
-        //         const file_info = await ctx.telegram.getFileLink(photo_info.file_id)
-        //         userOrders[ctx.from.id].color = file_info.href
-        //         ctx.reply(text.choseSize)
-        //         ctx.stepState(0.5)
-        //     }
-        // }))
-
-        // bot.on('text', Stating({
-        //     state: states.order,
-        //     step: 2.5,
-        //     func: async ctx => {
-        //         userOrders[ctx.from.id].size = ctx.message.text
-        //         const buttons = Markup.keyboard([
-        //             ["1", "2", "3", "4"],
-        //             ["5", "6", "7", "8"],
-        //             ["9", "10", "11", "12"],
-        //         ]).oneTime().resize()
-        //         ctx.reply(text.choseNumber, buttons)
-        //         ctx.stepState(0.5)
-        //     }
-        // }))
-
         bot.on('text', Stating({
             state: states.order,
             step: 3,
@@ -304,18 +178,18 @@ const Bot = {
                 // add one to list of ware
                 userOrders[ctx.from.id].ware.push({
                     wareText: userOrders[ctx.from.id].userWare,
-                    vendor: userOrders[ctx.from.id].vendor,
-                    color: userOrders[ctx.from.id].color,
-                    size: userOrders[ctx.from.id].size,
+                    // vendor: userOrders[ctx.from.id].vendor,
+                    // color: userOrders[ctx.from.id].color,
+                    // size: userOrders[ctx.from.id].size,
                     count: userOrders[ctx.from.id].count,
                 })
 
                 console.log(userOrders[ctx.from.id].ware)
 
                 userOrders[ctx.from.id].userWare = undefined
-                userOrders[ctx.from.id].vendor = undefined
-                userOrders[ctx.from.id].color = undefined
-                userOrders[ctx.from.id].size = undefined
+                // userOrders[ctx.from.id].vendor = undefined
+                // userOrders[ctx.from.id].color = undefined
+                // userOrders[ctx.from.id].size = undefined
                 userOrders[ctx.from.id].count = undefined
 
                 ctx.reply(text.choseTTNorAddress, kbs.ttnOrAddress)
@@ -327,6 +201,12 @@ const Bot = {
             state: states.order,
             step: 4,
             func: async ctx => {
+                try {
+                    ctx.editMessageReplyMarkup(null)
+                } catch (e) {
+                    console.error(e)
+                }
+                ctx.answerCbQuery()
                 ctx.reply(text.writeVendor)
                 ctx.stepState(-3)
             }
@@ -415,7 +295,9 @@ const Bot = {
                     reply_markup: { 
                         keyboard: [
                             [{text: '📲 Отправить номер телефона', request_contact: true, remove_keyboard: true, one_time_keyboard: true}]
-                        ]
+                        ],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
                     }
                 })
                 ctx.stepState()
@@ -429,6 +311,14 @@ const Bot = {
                 const phone = ctx.message.text
                 if (phone.match(/^\+?([0-9 ]{10}|[0-9 ]{12})$/)){
                     userOrders[ctx.from.id].number = ctx.update.message.text
+
+                    try {
+                      await ctx.editMessageReplyMarkup({
+                        reply_markup: { remove_keyboard: true },
+                      })
+                    } catch (e) {
+                      console.error(e)
+                    }
 
                     const order = userOrders[ctx.from.id]
                     const reply_text = buildReplyText(order)
