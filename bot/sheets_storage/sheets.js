@@ -29,7 +29,7 @@ const SheetsStorage = {
         'Дата',
 
         'Артикул Цвет Размер Количество',
-        'ТТН - Артикул Цвет Размер Количество',
+        'ТТН - Артикул Цвет Размер',
         'Адрес',
         'Квитанция',
 
@@ -62,11 +62,16 @@ const SheetsStorage = {
         })
 
         let wares = ''
+        let ttn_wares = ''
 
         for (i = 0; i < ware.length; i++) {
-            wares += ware[i].wareText
+            wares += ware[i].wareText.replace(/\n/g, ' ')
+            ttn_wares += ware[i].wareText.replace(/\n/g, ' ')
+
             wares += '\n' + ware[i].count + 'шт.'
             wares += i !== ware.length-1 ? '\n\n' : ''
+            ttn_wares += i !== ware.length-1 ? '\n' : ''
+
 
             n += ware[i].count
             n += i !== ware.length-1 ? '\n' : ''
@@ -80,7 +85,7 @@ const SheetsStorage = {
             'Дата': now,
 
             'Артикул Цвет Размер Количество': wares,
-            'ТТН - Артикул Цвет Размер Количество': ttn ? ttn + '\n' + wares : null,
+            'ТТН - Артикул Цвет Размер': ttn ? ttn + '\n' + ttn_wares : null,
             'Адрес': address,
             'Квитанция': check_url,
 
