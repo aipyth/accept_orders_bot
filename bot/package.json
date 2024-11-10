@@ -55,13 +55,12 @@
     "sandwich-stream": "^2.0.2",
     "split2": "^3.2.2",
     "string_decoder": "^1.3.0",
-    "telegraf": "^4.3.0",
+    "telegraf": "^4.16.3",
     "telegram-typings": "^3.6.1",
     "util-deprecate": "^1.0.2",
     "xtend": "^4.0.2",
     "yallist": "^4.0.0"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
