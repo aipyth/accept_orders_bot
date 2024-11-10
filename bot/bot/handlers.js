@@ -392,9 +392,27 @@ const Bot = {
 
                     // ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Спасибо, что оформили заказ!*", { parse_mode: "Markdown" })
                     ctx.reply(text.thanksAndContacts)
-                } catch (e) {
-                    console.error(e)
-                    ctx.reply(`Во время оправки заказа произошла ошибка`)
+                } catch (error) {
+                    // console.error(e)
+                    // ctx.reply(`Во время оправки заказа произошла ошибка`)
+
+                    // Check for a "Bad Request" error and attempt reconnection
+                    console.log("Error while sending order to Google Sheets:", error);
+                    const invalidRangeMessage = "Google API error - [400] Unable to parse range:";
+                    if (error.message.includes(invalidRangeMessage)) {
+                        console.warn("Bad Request error detected. Attempting to reconnect...");
+                        try {
+                            await SheetsStorage.connectToDocument();  // Reconnect to Google Sheets
+                            await SheetsStorage.add(userOrders[ctx.from.id]);  // Retry adding the order
+                            ctx.reply(text.thanksAndContacts);
+                        } catch (retryError) {
+                            console.log("Retry failed after reconnecting:", retryError);
+                            ctx.reply(`Во время оправки заказа произошла ошибка`);
+                        }
+                    } else {
+                        // Handle other types of errors
+                        ctx.reply(`Во время оправки заказа произошла ошибка`);
+                    }
                 } finally {
                     delete userOrders[ctx.from.id]
                 }
