@@ -20,7 +20,7 @@ const states = {
 let userStates = {}
 
 bot.context.setState = function(state, step) {
-    userStates[this.from.id] = {state: state, step: step}
+    userStates[this.from.id] = { state: state, step: step }
 }
 bot.context.stepState = function(step = 1) {
     userStates[this.from.id].step += step
@@ -33,7 +33,7 @@ bot.context.clearState = function() {
     delete userStates[this.from.id]
 }
 
-const Stating = function({state, step, func}) {
+const Stating = function({ state, step, func }) {
     return async function(ctx, next) {
         const curr_state = ctx.getState()
         if (curr_state != undefined && curr_state.state == state && curr_state.step == step) {
@@ -54,41 +54,40 @@ const Bot = {
     stop: reason => bot.stop(reason),
     launch: () => bot.launch(),
 
-    
+
 
     start: async () => {
 
-        const buildReplyText = ({wr, ware, ttn, address, comments, number, name}) => {
-            // let text = 'Проверьте, пожалуйста, ваш заказ:\n\n' + '*' + wr + '*\n'
-            let text = 'Проверьте, пожалуйста, ваш заказ:\n\n'
-            text += `Количество товаров — ${ware.length}\n`
+        const buildReplyText = ({ wr, ware, ttn, address, comments, number, name }) => {
+            let text = 'Перевірте, будь ласка, ваше замовлення:\n\n'
+            text += `Кількість товарів — ${ware.length}\n`
             for (let i = 0; i < ware.length; i++) {
-                text += `_Товар ${i+1}_ — `
+                text += `_Товар ${i + 1}_ — `
                 if (ware[i].wareText != undefined) {
                     text += '*' + ware[i].wareText + '* '
                     if (ware[i].color != undefined) {
-                        text += '+ _вы указали цвет фотографией_ , '
+                        text += '+ _ви вказали колір фотографією_ , '
                     }
                 } else {
                     text += '*' + ware[i].vendor + '*, '
                     if (!ware[i].color.startsWith('http')) {
                         text += '*' + ware[i].color + '*, '
                     } else {
-                        text += ' _вы указали цвет фотографией_ , '
+                        text += ' _ви вказали колір фотографією_ , '
                     }
                     text += '*' + ware[i].size + '*, '
                 }
                 text += '*' + ware[i].count + ' шт.*\n'
             }
-            text += ttn ? ('ТТН: *' + ttn + '*\n') : ('Адрес: *' + address + '*\n')
-            text += '_Номер телефона:_ ' + '*' + number + '*\n'
-            text += '_Имя:_ ' + '*' + name + '*\n'
-            text += '_Комментарий:_ ' + (comments ?  '*' + comments + '*' : "_Не указан_")
+            text += ttn ? ('ТТН: *' + ttn + '*\n') : ('Адреса: *' + address + '*\n')
+            text += '_Номер телефону:_ ' + '*' + number + '*\n'
+            text += '_Ім’я:_ ' + '*' + name + '*\n'
+            text += '_Коментар:_ ' + (comments ? '*' + comments + '*' : "_Не вказано_")
 
-            text += "\n\nТакже Вы можете указать комментарий, если что-то упустили при создании заказа"
-            text += "\n\nЧтобы оставить комментарий, нажмите кнопку ниже 👇"
-            
-            text += "\n\nЕсли Вы подтверждаете заказ, нажмите \"Подтвердить и отправить\""
+            text += "\n\nТакож ви можете додати коментар, якщо щось упустили під час створення замовлення"
+            text += "\n\nЩоб залишити коментар, натисніть кнопку нижче 👇"
+
+            text += "\n\nЯкщо ви підтверджуєте замовлення, натисніть \"Підтвердити і відправити\""
             return text
         }
 
@@ -134,20 +133,18 @@ const Bot = {
         bot.command('cancel', async ctx => {
             ctx.clearState()
             delete userOrders[ctx.from.id]
-            ctx.reply(`Вы отменили заявку`)
+            ctx.reply(`Ви скасували заявку`)
         })
 
         bot.action(kbs.callbacks.addOrder, async ctx => {
             ctx.answerCbQuery()
-            // ctx.reply(text.tradeChoice, kbs.tradeChoice)
-            ctx.reply(`Перейдем к выбору товара\n\n` + text.writeVendor, {parse_mode: 'Markdown'})
+            ctx.reply(`Переходимо до вибору товару\n\n` + text.writeVendor, { parse_mode: 'Markdown' })
             ctx.setState(states.order, 1)
             userOrders[ctx.from.id] = new Order()
         })
 
         bot.command('order', async ctx => {
-            // ctx.reply(text.tradeChoice, kbs.tradeChoice)
-            ctx.reply(`Перейдем к выбору товара\n\n` + text.writeVendor, {parse_mode: 'Markdown'})
+            ctx.reply(`Переходимо до вибору товару\n\n` + text.writeVendor, { parse_mode: 'Markdown' })
             ctx.setState(states.order, 1)
             userOrders[ctx.from.id] = new Order()
         })
@@ -225,7 +222,7 @@ const Bot = {
 
                 if (ctx.update.callback_query.data == kbs.callbacks.ttn) {
                     userOrders[ctx.from.id].ttn = true
-                    ctx.reply(`Напишите ТТН`)
+                    ctx.reply(`Напишіть ТТН`)
                 } else if (ctx.update.callback_query.data == kbs.callbacks.address) {
                     userOrders[ctx.from.id].address = true
                     ctx.replyWithMarkdown(text.writeAddress)
@@ -247,7 +244,7 @@ const Bot = {
                 ctx.stepState()
             }
         }))
-        
+
 
         bot.on('photo', Stating({
             state: states.order,
@@ -262,27 +259,27 @@ const Bot = {
                 const filename = `${ctx.update.update_id}_${time_now}.jpg`
                 const filepath = `${process.env.IMAGES_PATH}/${filename}`
 
-                axios({url: url.href, responseType: 'stream'})
-                .then(response => {
-                    return new Promise((resolve, reject) => {
-                        response.data.pipe(fs.createWriteStream(filepath))
-                            .on('finish', () => {
-                                
-                                userOrders[ctx.from.id].check_url = `${process.env.SERVER_URL}/${filename}`
+                axios({ url: url.href, responseType: 'stream' })
+                    .then(response => {
+                        return new Promise((resolve, reject) => {
+                            response.data.pipe(fs.createWriteStream(filepath))
+                                .on('finish', () => {
 
-                                ctx.reply(text.writeName)
-                                ctx.stepState()
-                            })
-                            .on('error', e => {
-                                console.error('cannot get photo', e)
-                                ctx.reply('Ошибка сервера. В данный момент невозможно получить фотографию.')
-                                ctx.clearState()
-                                delete userOrders[ctx.from.id]
-                            })
+                                    userOrders[ctx.from.id].check_url = `${process.env.SERVER_URL}/${filename}`
+
+                                    ctx.reply(text.writeName)
+                                    ctx.stepState()
+                                })
+                                .on('error', e => {
+                                    console.error('cannot get photo', e)
+                                    ctx.reply('Помилка сервера. Наразі неможливо отримати фотографію.')
+                                    ctx.clearState()
+                                    delete userOrders[ctx.from.id]
+                                })
                         });
                     })
-                
-                
+
+
             }
         }))
 
@@ -292,9 +289,9 @@ const Bot = {
             func: async ctx => {
                 userOrders[ctx.from.id].name = ctx.update.message.text
                 ctx.reply(text.writePhoneNumber, {
-                    reply_markup: { 
+                    reply_markup: {
                         keyboard: [
-                            [{text: '📲 Отправить номер телефона', request_contact: true, remove_keyboard: true, one_time_keyboard: true}]
+                            [{ text: '📲 Відправити номер телефону', request_contact: true, remove_keyboard: true, one_time_keyboard: true }]
                         ],
                         resize_keyboard: true,
                         one_time_keyboard: true
@@ -309,15 +306,15 @@ const Bot = {
             step: 8,
             func: async ctx => {
                 const phone = ctx.message.text
-                if (phone.match(/^\+?([0-9 ]{10}|[0-9 ]{12})$/)){
+                if (phone.match(/^\+?([0-9 ]{10}|[0-9 ]{12})$/)) {
                     userOrders[ctx.from.id].number = ctx.update.message.text
 
                     try {
-                      await ctx.editMessageReplyMarkup({
-                        reply_markup: { remove_keyboard: true },
-                      })
+                        await ctx.editMessageReplyMarkup({
+                            reply_markup: { remove_keyboard: true },
+                        })
                     } catch (e) {
-                      console.error(e)
+                        console.error(e)
                     }
 
                     const order = userOrders[ctx.from.id]
@@ -326,7 +323,7 @@ const Bot = {
                     await ctx.replyWithMarkdown(reply_text, kbs.submitOrComment)
                     ctx.stepState()
                 } else {
-                    ctx.reply(`Ошибка ввода мобильного телефона, попробуйте еще раз`)
+                    ctx.reply(`Помилка вводу номера телефону. Будь ласка, спробуйте ще раз.`)
                 }
             }
         }))
@@ -356,9 +353,9 @@ const Bot = {
                 }
                 ctx.answerCbQuery()
 
-                ctx.reply(`Укажите ваш комментарий`)
+                ctx.reply(`Задайте ваш коментар`)
                 ctx.stepState()
-                
+
             }
         }))
 
@@ -385,7 +382,7 @@ const Bot = {
                 } catch (e) {
                     console.error(e)
                 }
-                ctx.answerCbQuery(`Отправляю ваш заказ`)
+                ctx.answerCbQuery(`Відправляю ваше замовлення`)
                 // add to google sheets
                 try {
                     await SheetsStorage.add(userOrders[ctx.from.id])
@@ -428,19 +425,19 @@ const Bot = {
                 } catch (e) {
                     console.error(e)
                 }
-                ctx.answerCbQuery(`Ваша заявка отклонена вами`)
+                ctx.answerCbQuery(`Ваше замовлення відхилене вами.`)
 
                 delete userOrders[ctx.from.id]
 
                 try {
-                    ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Вы отменили заказ*", { parse_mode: 'Markdown' })
+                    ctx.editMessageText(ctx.update.callback_query.message.text + "\n\n *Ви відмінили замовлення*", { parse_mode: 'Markdown' })
                 } catch (e) {
                     console.log(e)
                 }
             }
         }))
 
-        
+
     },
 }
 
