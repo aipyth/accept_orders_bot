@@ -17,7 +17,7 @@ const buildInlineKeyboard = (arr, cols = null) => {
 const callbacks = {
     addOrder: 'add-order',
     wholesale: 'Опт',
-    retail: 'Розница',
+    retail: 'Роздріб',
     ttn: 'ttn',
     address: 'address',
     receipt: 'receipt',
@@ -32,25 +32,24 @@ module.exports = {
     callbacks: callbacks,
 
     addOrder: buildInlineKeyboard([
-        ['Добавить заказ', callbacks.addOrder],
+        ['Додати замовлення', callbacks.addOrder],
     ]),
 
     tradeChoice: buildInlineKeyboard([
         ['Опт', callbacks.wholesale],
-        ['Розница', callbacks.retail],
+        ['Роздріб', callbacks.retail],
     ]),
 
     ttnOrAddress: buildInlineKeyboard([
         ['TTН', callbacks.ttn],
-        ['Адрес', callbacks.address],
+        ['Адреса', callbacks.address],
         ['PDF Накладна', callbacks.receipt],
-        ['Добавить товар', callbacks.addWare],
+        ['Додати товар', callbacks.addWare],
     ]),
 
     submitOrComment: buildInlineKeyboard([
-        ['Оставить комментарий', callbacks.comment],
-        ['Подтвердить и отправить', callbacks.submit],
-        ['Отменить', callbacks.decline],
+        ['Залишити коментар', callbacks.comment],
+        ['Підтвердити і відправити', callbacks.submit],
+        ['Скасувати', callbacks.decline],
     ])
 }
-
