@@ -10,6 +10,7 @@ const axios = require('axios')
 const fs = require('fs')
 
 
+const RECEIPT_FOLDER = process.env.IMAGES_PATH
 
 const bot = new Telegraf(process.env.BOT_TOKEN)
 
@@ -58,7 +59,7 @@ const Bot = {
 
     start: async () => {
 
-        const buildReplyText = ({ wr, ware, ttn, address, comments, number, name }) => {
+        const buildReplyText = ({ wr, ware, ttn, address, receiptPath, comments, number, name }) => {
             let text = 'Перевірте, будь ласка, ваше замовлення:\n\n'
             text += `Кількість товарів — ${ware.length}\n`
             for (let i = 0; i < ware.length; i++) {
@@ -79,7 +80,14 @@ const Bot = {
                 }
                 text += '*' + ware[i].count + ' шт.*\n'
             }
-            text += ttn ? ('ТТН: *' + ttn + '*\n') : ('Адреса: *' + address + '*\n')
+            if (ttn) {
+                text += ('_ТТН_: *' + ttn + '*\n')
+            } else if (address) {
+                text += ('_Адреса_: *' + address + '*\n')
+            } else if (receiptPath) {
+                text += '_Накладна_: _збережено_\n'
+            }
+            // text += ttn ? ('ТТН: *' + ttn + '*\n') : ('Адреса: *' + address + '*\n')
             text += '_Номер телефону:_ ' + '*' + number + '*\n'
             text += '_Ім’я:_ ' + '*' + name + '*\n'
             text += '_Коментар:_ ' + (comments ? '*' + comments + '*' : "_Не вказано_")
@@ -209,7 +217,7 @@ const Bot = {
             }
         }))
 
-        bot.action([kbs.callbacks.ttn, kbs.callbacks.address], Stating({
+        bot.action([kbs.callbacks.ttn, kbs.callbacks.address, kbs.callbacks.receipt], Stating({
             state: states.order,
             step: 4,
             func: async ctx => {
@@ -226,6 +234,9 @@ const Bot = {
                 } else if (ctx.update.callback_query.data == kbs.callbacks.address) {
                     userOrders[ctx.from.id].address = true
                     ctx.replyWithMarkdown(text.writeAddress)
+                } else if (ctx.update.callback_query.data == kbs.callbacks.receipt) {
+                    userOrders[ctx.from.id].receipt = true;
+                    ctx.reply(`Будь ласка, надішліть PDF файл накладної.`);
                 }
                 ctx.stepState()
             }
@@ -242,6 +253,41 @@ const Bot = {
                 }
                 ctx.reply(text.provideCheckPhoto)
                 ctx.stepState()
+            }
+        }))
+
+        bot.on('document', Stating({
+            state: states.order,
+            step: 5,
+            func: async ctx => {
+                const fileId = ctx.message.document.file_id;
+                const fileName = ctx.message.document.file_name;
+                const time_now = (new Date()).getTime().toString()
+                const filename = `${ctx.from.id}_${time_now}_${fileName}`;
+                const filePath = `${RECEIPT_FOLDER}/${filename}`;
+
+                const fileLink = await ctx.telegram.getFileLink(fileId);
+
+                axios({ url: fileLink.href, responseType: 'stream' })
+                    .then(response => {
+                        return new Promise((resolve, reject) => {
+                            response.data.pipe(fs.createWriteStream(filePath))
+                                .on('finish', async () => {
+
+                                    userOrders[ctx.from.id].receiptPath = `${process.env.SERVER_URL}/${filename}`;
+
+                                    await ctx.reply(`Накладну збережено`);
+                                    await ctx.reply(text.provideCheckPhoto)
+                                    ctx.stepState();
+                                })
+                                .on('error', async e => {
+                                    console.error('cannot get receipt', e)
+                                    await ctx.reply('Помилка сервера. Не вдалося зберегти чек.')
+                                    ctx.clearState()
+                                    delete userOrders[ctx.from.id]
+                                })
+                        });
+                    })
             }
         }))
 

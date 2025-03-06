@@ -54,11 +54,11 @@ const SheetsStorage = {
         return this._doc.title
     },
 
-    add: async function({wr, ware, ttn, address, check_url, number, name, comments}) {
+    add: async function({ wr, ware, ttn, receiptPath, address, check_url, number, name, comments }) {
         let n = ""
 
         console.dir({
-          wr, ware, ttn, address, check_url, number, name, comments
+            wr, ware, ttn, address, receiptPath, check_url, number, name, comments
         })
 
         let wares = ''
@@ -69,12 +69,12 @@ const SheetsStorage = {
             ttn_wares += ware[i].wareText.replace(/\n/g, ' ')
 
             wares += '\n' + ware[i].count + 'шт.'
-            wares += i !== ware.length-1 ? '\n\n' : ''
-            ttn_wares += i !== ware.length-1 ? '\n' : ''
+            wares += i !== ware.length - 1 ? '\n\n' : ''
+            ttn_wares += i !== ware.length - 1 ? '\n' : ''
 
 
             n += ware[i].count
-            n += i !== ware.length-1 ? '\n' : ''
+            n += i !== ware.length - 1 ? '\n' : ''
         }
 
         const now = (new Date()).toLocaleString(['de-AT', 'en-GB', 'en-AU'], {
@@ -86,7 +86,7 @@ const SheetsStorage = {
 
             'Артикул Цвет Размер Количество': wares,
             'ТТН - Артикул Цвет Размер': ttn ? ttn + '\n' + ttn_wares : null,
-            'Адрес': address,
+            'Адрес': address ? address : receiptPath,
             'Квитанция': check_url,
 
             // 'Тип заказа': wr,
