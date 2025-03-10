@@ -217,7 +217,7 @@ const Bot = {
             }
         }))
 
-        bot.action([kbs.callbacks.ttn, kbs.callbacks.address, kbs.callbacks.receipt], Stating({
+        bot.action([kbs.callbacks.ttn, kbs.callbacks.address], Stating({
             state: states.order,
             step: 4,
             func: async ctx => {
@@ -234,9 +234,9 @@ const Bot = {
                 } else if (ctx.update.callback_query.data == kbs.callbacks.address) {
                     userOrders[ctx.from.id].address = true
                     ctx.replyWithMarkdown(text.writeAddress)
-                } else if (ctx.update.callback_query.data == kbs.callbacks.receipt) {
-                    userOrders[ctx.from.id].receipt = true;
-                    ctx.reply(`Будь ласка, надішліть PDF файл накладної.`);
+                    // } else if (ctx.update.callback_query.data == kbs.callbacks.receipt) {
+                    //     userOrders[ctx.from.id].receipt = true;
+                    //     ctx.reply(`Будь ласка, надішліть PDF файл накладної.`);
                 }
                 ctx.stepState()
             }
@@ -251,14 +251,15 @@ const Bot = {
                 } else if (userOrders[ctx.from.id].address === true) {
                     userOrders[ctx.from.id].address = ctx.message.text
                 }
-                ctx.reply(text.provideCheckPhoto)
+                // ctx.reply(text.provideCheckPhoto)
+                ctx.reply(`Будь ласка, надішліть PDF файл накладної.`);
                 ctx.stepState()
             }
         }))
 
         bot.on('document', Stating({
             state: states.order,
-            step: 5,
+            step: 6,
             func: async ctx => {
                 const fileId = ctx.message.document.file_id;
                 const fileName = ctx.message.document.file_name;
@@ -294,7 +295,7 @@ const Bot = {
 
         bot.on('photo', Stating({
             state: states.order,
-            step: 6,
+            step: 7,
             func: async ctx => {
                 const files = ctx.update.message.photo
                 const photo_info = files[files.length - 1]
@@ -331,7 +332,7 @@ const Bot = {
 
         bot.on('text', Stating({
             state: states.order,
-            step: 7,
+            step: 8,
             func: async ctx => {
                 userOrders[ctx.from.id].name = ctx.update.message.text
                 ctx.reply(text.writePhoneNumber, {
@@ -349,7 +350,7 @@ const Bot = {
 
         bot.on('text', Stating({
             state: states.order,
-            step: 8,
+            step: 9,
             func: async ctx => {
                 const phone = ctx.message.text
                 if (phone.match(/^\+?([0-9 ]{10}|[0-9 ]{12})$/)) {
@@ -376,7 +377,7 @@ const Bot = {
 
         bot.on('contact', Stating({
             state: states.order,
-            step: 8,
+            step: 9,
             func: async ctx => {
                 userOrders[ctx.from.id].number = ctx.update.message.contact.phone_number
 
@@ -390,7 +391,7 @@ const Bot = {
 
         bot.action(kbs.callbacks.comment, Stating({
             state: states.order,
-            step: 9,
+            step: 10,
             func: async ctx => {
                 try {
                     ctx.editMessageReplyMarkup(null)
@@ -407,7 +408,7 @@ const Bot = {
 
         bot.on('text', Stating({
             state: states.order,
-            step: 10,
+            step: 11,
             func: async ctx => {
                 userOrders[ctx.from.id].comments = ctx.update.message.text
 
@@ -421,7 +422,7 @@ const Bot = {
 
         bot.action(kbs.callbacks.submit, Stating({
             state: states.order,
-            step: 9,
+            step: 10,
             func: async ctx => {
                 try {
                     ctx.editMessageReplyMarkup(null)
@@ -464,7 +465,7 @@ const Bot = {
 
         bot.action(kbs.callbacks.decline, Stating({
             state: states.order,
-            step: 9,
+            step: 10,
             func: async ctx => {
                 try {
                     ctx.editMessageReplyMarkup(null)
